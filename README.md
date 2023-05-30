@@ -7,10 +7,10 @@ Ask questions to your python Agents and get your work done. A small take on unde
 
 Create an environment using anaconda or python venv and then run the below command: 
 
-==pip install requirements.txt==
+pip install requirements.txt
 
 
-Rename 'example.env' to '.env' and edit the variables appropriately.Add your OPEN_API_KEY in the '.env' file.
+Rename 'example.env to '.env' and edit the variables appropriately.Add your OPEN_API_KEY in the '.env' file.
 
 
 # Run the agent
