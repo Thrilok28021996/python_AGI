@@ -3,28 +3,18 @@
 
 ## Import LangChain related modules
 
-from langchain.schema import (
-    SystemMessage,
-    HumanMessage,
-)
-
-from langchain.prompts.chat import (
-    HumanMessagePromptTemplate,
-)
-from langchain.chat_models import ChatOpenAI
-from camelagent import CAMELAgent
-
-from dotenv import load_dotenv
-
-load_dotenv()
-
-from utils import get_sys_msgs
-import colorama
-
 ###  Setup OpenAI API key and roles and task for role-playing
 import os
 
+import colorama
+from langchain.prompts.chat import HumanMessagePromptTemplate
+from langchain.schema import HumanMessage, SystemMessage
+from langchain_ollama import ChatOllama
 
+from camelagent import CAMELAgent
+from utils import get_sys_msgs
+
+model_name = "llama3.2"
 assistant_role_name = "Agent007"
 user_role_name = "Agent369"
 task = """ write the code for fibonacci series."""
@@ -41,7 +31,7 @@ Please reply with the specified task in {word_limit} words or less. Do not add a
 task_specifier_template = HumanMessagePromptTemplate.from_template(
     template=task_specifier_prompt
 )
-task_specify_agent = CAMELAgent(task_specifier_sys_msg, ChatOpenAI(temperature=1.0))
+task_specify_agent = CAMELAgent(task_specifier_sys_msg, ChatOllama(model=model_name))
 task_specifier_msg = task_specifier_template.format_messages(
     assistant_role_name=assistant_role_name,
     user_role_name=user_role_name,
@@ -61,8 +51,8 @@ specified_task = specified_task_msg.content
 assistant_sys_msg, user_sys_msg = get_sys_msgs(
     assistant_role_name, user_role_name, specified_task
 )
-assistant_agent = CAMELAgent(assistant_sys_msg, ChatOpenAI(temperature=0.2))
-user_agent = CAMELAgent(user_sys_msg, ChatOpenAI(temperature=0.2))
+assistant_agent = CAMELAgent(assistant_sys_msg, ChatOllama(model=model_name))
+user_agent = CAMELAgent(user_sys_msg, ChatOllama(model=model_name))
 
 # Reset agents
 assistant_agent.reset()
@@ -106,5 +96,5 @@ while n < chat_turn_limit:
         + f"AI Assistant ({assistant_role_name}):\n\n{assistant_msg.content}\n\n"
         + colorama.Style.RESET_ALL
     )
-    if "<TASK_DONE>" in user_msg.content:
+    if "<TASK_DONE>" or "TASK_DONE" in user_msg.content:
         break
