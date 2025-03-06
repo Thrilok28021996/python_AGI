@@ -2,13 +2,11 @@
 ## CAMEL: Communicative Agents for “Mind” Exploration of Large Scale Language Model Society
 
 ## Import LangChain related modules
-
-###  Setup OpenAI API key and roles and task for role-playing
-import os
+# python camel.py| tee -a spamdetector.txt
 
 import colorama
-from langchain.prompts.chat import HumanMessagePromptTemplate
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.prompts.chat import HumanMessagePromptTemplate
 from langchain_ollama import ChatOllama
 
 from camelagent import CAMELAgent
@@ -17,10 +15,10 @@ from utils import get_sys_msgs
 model_name = "llama3.2"
 assistant_role_name = "Agent007"
 user_role_name = "Agent369"
-task = """ write the code for fibonacci series."""
+task = """Create an Application that can write blogs using langchain_ollama Models and serp api and langchain with the search feature that can provide latest updates for a keyword. The Generated Blogs should be SEO Optimized such that it should get the clicks."""
 
 
-word_limit = 50  # word limit for task brainstorming
+word_limit = 100  # word limit for task brainstorming
 
 
 ### Create a task specify agent for brainstorming and get the specified task
@@ -39,6 +37,7 @@ task_specifier_msg = task_specifier_template.format_messages(
     word_limit=word_limit,
 )[0]
 specified_task_msg = task_specify_agent.step(task_specifier_msg)
+
 print(
     colorama.Fore.MAGENTA
     + f"Specified task: {specified_task_msg.content}"
@@ -78,7 +77,7 @@ print(
     + f"Specified task prompt:\n{specified_task}\n"
     + colorama.Style.RESET_ALL
 )
-chat_turn_limit, n = 30, 0
+chat_turn_limit, n = 50, 0
 while n < chat_turn_limit:
     n += 1
     user_ai_msg = user_agent.step(assistant_msg)
@@ -96,5 +95,5 @@ while n < chat_turn_limit:
         + f"AI Assistant ({assistant_role_name}):\n\n{assistant_msg.content}\n\n"
         + colorama.Style.RESET_ALL
     )
-    if "<TASK_DONE>" or "TASK_DONE" in user_msg.content:
+    if "<TASK_DONE>" in user_msg.content:
         break

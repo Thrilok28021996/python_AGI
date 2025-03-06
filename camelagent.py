@@ -1,11 +1,7 @@
-from langchain.schema import (
-    SystemMessage,
-    BaseMessage,
-    HumanMessage,
-    AIMessage,
-)
-from langchain.chat_models import ChatOpenAI
 from typing import List
+
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
+from langchain_ollama import ChatOllama
 
 
 ## Define a CAMEL agent helper class
@@ -13,7 +9,7 @@ class CAMELAgent:
     def __init__(
         self,
         system_message: SystemMessage,
-        model: ChatOpenAI,
+        model: ChatOllama,
     ) -> None:
         self.system_message = system_message
         self.model = model
@@ -36,7 +32,8 @@ class CAMELAgent:
     ) -> AIMessage:
         messages = self.update_messages(input_message)
 
-        output_message = self.model(messages)
+        output_message = self.model.invoke(messages)
+
         self.update_messages(output_message)
 
         return output_message
