@@ -1,6 +1,20 @@
 # Python AGI
 
-Ask questions to your python Agents and get your work done. A small take on understanding the AGI using the CAMEL AGENT from langchain.
+Build intelligent multi-agent systems where specialized AI agents work together like a real company team.
+
+## 🎯 What's Inside
+
+This project includes two powerful agent systems:
+
+### 1. **CAMEL Agent System** (Original)
+Two agents collaborate on tasks through structured dialogue - perfect for learning agent interaction patterns.
+
+### 2. **Multi-Agent Company System** (New! ⭐)
+Build complete "AI companies" with specialized roles:
+- 10+ pre-built agent types (CEO, Developer, QA, Designer, etc.)
+- 3 workflow patterns (Sequential, Collaborative, Hierarchical)
+- Support for multiple Ollama models
+- Production-ready architecture
 
 ## Prerequisites
 
@@ -24,21 +38,232 @@ pip install -r requirements.txt
 
 **Note:** This project uses Ollama (local LLM), not OpenAI. No API keys required for basic usage.
 
-## Run the agent
+---
 
-To run the agent:
+## 🚀 Quick Start
 
-1. First change the task you want to complete in the `camel.py` file or you can run with the default task.
-2. Go to the location of the Folder Python_AGI and type:
-   ```bash
-   python camel.py
-   ```
+### 🌟 NEW: Auto-Agent Router (Easiest Way!)
 
-## Configuration
+**Just describe your task - agents are selected automatically!**
 
-If you want to customize the Ollama model or base URL, you can:
-1. Copy `example.env` to `.env`:
-   ```bash
-   cp example.env .env
-   ```
-2. Edit the `.env` file to change `OLLAMA_MODEL` or `OLLAMA_BASE_URL` (optional)
+```bash
+# One command - that's it!
+python run_task.py "Build a REST API for user management"
+
+# Or try:
+python run_task.py "Create a secure authentication system with tests"
+python run_task.py "Design a scalable microservices architecture"
+```
+
+The system automatically:
+- ✅ Analyzes your task
+- ✅ Selects the best agents
+- ✅ Chooses optimal workflow
+- ✅ Executes and returns results
+
+**Read the guide:** [AUTO_ROUTER_GUIDE.md](AUTO_ROUTER_GUIDE.md)
+
+### Option 1: Multi-Agent System (Manual Selection)
+
+Build a team of specialized agents working together:
+
+```bash
+# Quick start with 3 agents
+python quick_start_multi_agent.py
+
+# Try different workflows
+python example_sequential.py      # Pipeline workflow
+python example_collaborative.py   # Team discussion
+python example_hierarchical.py    # Manager + team
+python example_custom_workflow.py # Advanced patterns
+```
+
+**Read the complete guide:** [MULTI_AGENT_GUIDE.md](MULTI_AGENT_GUIDE.md)
+
+### Option 2: Original CAMEL Agent
+
+Two agents collaborating on a task:
+
+```bash
+python camel.py
+```
+
+To customize the task, edit the `task` variable in `camel.py`.
+
+---
+
+## 📚 Multi-Agent System Overview
+
+### Available Agent Roles
+
+- **CEO** - Strategic planning and decision making
+- **Product Manager** - Requirements and user stories
+- **Lead Developer** - Architecture and technical leadership
+- **Backend Developer** - Server-side implementation
+- **Frontend Developer** - UI implementation
+- **QA Tester** - Testing and quality assurance
+- **DevOps Engineer** - Deployment and infrastructure
+- **UI/UX Designer** - Design and user experience
+- **Security Expert** - Security audits and best practices
+- **Technical Writer** - Documentation
+
+### Workflow Patterns
+
+**1. Sequential (Pipeline)**
+```
+Product Manager → Developer → QA → DevOps
+```
+Agents work one after another like an assembly line.
+
+**2. Collaborative (Discussion)**
+```
+All agents discuss together → Reach consensus
+```
+Multiple agents discuss to find the best solution.
+
+**3. Hierarchical (Management)**
+```
+CEO/Manager assigns → Team executes → Manager reviews
+```
+Manager directs and coordinates team members.
+
+### Simple Example
+
+```python
+from agent_team import AgentTeam
+
+# Create your team
+team = AgentTeam({
+    "Alice": "product_manager",
+    "Bob": "backend_developer",
+    "Charlie": "qa_tester"
+})
+
+# Run a workflow
+team.sequential_workflow(
+    task="Build a REST API for user management",
+    agent_order=["Alice", "Bob", "Charlie"]
+)
+```
+
+### Using Different Ollama Models
+
+Different agents can use different models:
+
+```python
+from specialized_agent import SpecializedAgent
+
+# Backend dev uses CodeLlama (if installed)
+backend = SpecializedAgent(
+    role="Backend Developer",
+    name="Bob",
+    expertise=["Python", "FastAPI"],
+    model_name="codellama",  # Specialized code model
+    temperature=0.3
+)
+
+# Designer uses higher creativity
+designer = SpecializedAgent(
+    role="UI/UX Designer",
+    name="Alice",
+    expertise=["UI Design", "UX"],
+    model_name="llama3.2",
+    temperature=0.8  # More creative
+)
+```
+
+Install additional models:
+```bash
+ollama pull codellama  # For coding tasks
+ollama pull mixtral    # For complex reasoning
+ollama pull phi        # For fast responses
+```
+
+---
+
+## 📖 Documentation
+
+- **[MULTI_AGENT_GUIDE.md](MULTI_AGENT_GUIDE.md)** - Complete multi-agent system guide
+- **[specialized_agent.py](specialized_agent.py)** - Agent implementation
+- **[agent_team.py](agent_team.py)** - Team coordination
+- **[multi_model_config.py](multi_model_config.py)** - Model configuration
+
+---
+
+## 🎓 Examples Included
+
+| Example | Description | Agents | Pattern |
+|---------|-------------|--------|---------|
+| `quick_start_multi_agent.py` | Simple 3-agent project | 3 | Sequential |
+| `example_sequential.py` | Development pipeline | 5 | Sequential |
+| `example_collaborative.py` | Architecture discussion | 4 | Collaborative |
+| `example_hierarchical.py` | CEO managing team | 5 | Hierarchical |
+| `example_custom_workflow.py` | Code review & sprint planning | Various | Custom |
+| `camel.py` | Original CAMEL agents | 2 | CAMEL |
+
+---
+
+## 🛠️ Configuration
+
+### Using Different Models
+
+Edit `multi_model_config.py` to assign different models to roles:
+
+```python
+MODEL_ASSIGNMENTS = {
+    "backend_developer": {
+        "model": "codellama",  # Change this
+        "temperature": 0.3
+    },
+    # ... more roles
+}
+```
+
+### Environment Variables (Optional)
+
+```bash
+cp example.env .env
+# Edit .env to customize OLLAMA_MODEL or OLLAMA_BASE_URL
+```
+
+---
+
+## 🎯 Use Cases
+
+- **Software Development:** Complete projects with specialized dev team
+- **Code Review:** Multiple experts review code simultaneously
+- **Sprint Planning:** PM and team plan and estimate work
+- **Architecture Design:** Team discusses and decides on architecture
+- **Documentation:** Generate comprehensive project docs
+- **Quality Assurance:** Systematic testing and bug finding
+- **Learning:** Understand how AI agents can collaborate
+
+---
+
+## 🤝 Contributing
+
+Feel free to:
+- Add new agent roles
+- Create new workflow patterns
+- Improve existing examples
+- Add support for more Ollama models
+
+---
+
+## 📝 License
+
+This project is for educational and research purposes.
+
+---
+
+## 🚦 Getting Started Checklist
+
+- [ ] Install Ollama
+- [ ] Pull llama3.2 model (`ollama pull llama3.2`)
+- [ ] Install Python dependencies (`pip install -r requirements.txt`)
+- [ ] Run quick start (`python quick_start_multi_agent.py`)
+- [ ] Read [MULTI_AGENT_GUIDE.md](MULTI_AGENT_GUIDE.md)
+- [ ] Try the examples
+- [ ] Build your own multi-agent project!
+
+**Questions?** Check the [troubleshooting section](MULTI_AGENT_GUIDE.md#troubleshooting) in the guide.
