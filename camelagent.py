@@ -32,7 +32,10 @@ class CAMELAgent:
     ) -> AIMessage:
         messages = self.update_messages(input_message)
 
-        output_message = self.model.invoke(messages)
+        try:
+            output_message = self.model.invoke(messages)
+        except Exception as e:
+            raise RuntimeError(f"LLM invocation failed: {str(e)}") from e
 
         self.update_messages(output_message)
 

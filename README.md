@@ -2,20 +2,43 @@
 
 Ask questions to your python Agents and get your work done. A small take on understanding the AGI using the CAMEL AGENT from langchain.
 
+## Prerequisites
 
-# Install the necessary packages
+1. Install [Ollama](https://ollama.ai) on your system
+2. Pull the llama3.2 model:
+   ```bash
+   ollama pull llama3.2
+   ```
+3. Verify Ollama is running:
+   ```bash
+   ollama list
+   ```
 
-Create an environment using anaconda or python venv and then run the below command: 
+## Install the necessary packages
 
-pip install requirements.txt
+Create an environment using anaconda or python venv and then run the below command:
 
+```bash
+pip install -r requirements.txt
+```
 
-Rename 'example.env to '.env' and edit the variables appropriately.Add your OPEN_API_KEY in the '.env' file.
+**Note:** This project uses Ollama (local LLM), not OpenAI. No API keys required for basic usage.
 
+## Run the agent
 
-# Run the agent
+To run the agent:
 
-To run the agent, First change the task you want to complete in the camel.py file or you can run with the default task.
+1. First change the task you want to complete in the `camel.py` file or you can run with the default task.
+2. Go to the location of the Folder Python_AGI and type:
+   ```bash
+   python camel.py
+   ```
 
-To run the agent,Go to the location of the Folder Python_AGI and
-type : 'python camel.py' in the terminal.
+## Configuration
+
+If you want to customize the Ollama model or base URL, you can:
+1. Copy `example.env` to `.env`:
+   ```bash
+   cp example.env .env
+   ```
+2. Edit the `.env` file to change `OLLAMA_MODEL` or `OLLAMA_BASE_URL` (optional)

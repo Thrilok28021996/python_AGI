@@ -1,9 +1,7 @@
 ## CAMEL Role-Playing Autonomous Cooperative Agents
-## CAMEL: Communicative Agents for “Mind” Exploration of Large Scale Language Model Society
+## CAMEL: Communicative Agents for "Mind" Exploration of Large Scale Language Model Society
 
 ## Import LangChain related modules
-# python camel.py| tee -a spamdetector.txt
-
 import colorama
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts.chat import HumanMessagePromptTemplate
@@ -15,7 +13,7 @@ from utils import get_sys_msgs
 model_name = "llama3.2"
 assistant_role_name = "Agent007"
 user_role_name = "Agent369"
-task = """Create an Application that can write blogs using langchain_ollama Models and serp api and langchain with the search feature that can provide latest updates for a keyword. The Generated Blogs should be SEO Optimized such that it should get the clicks."""
+task = """Create an Application that can write blogs using ollama Models. The Generated Blogs should be SEO Optimized such that it should get the clicks."""
 
 
 word_limit = 100  # word limit for task brainstorming
@@ -61,8 +59,9 @@ user_agent.reset()
 assistant_msg = HumanMessage(
     content=(
         f"{user_sys_msg.content}. "
-        "Now start to give me introductions one by one. "
-        "Only reply with Response,Reflections, code and Critique"
+        "Now start working on the task. Begin by proposing an initial approach. "
+        "Do NOT say TASK_DONE until we have completed working code. "
+        "Always reply with Response, Reflections, Code and Critique sections."
     )
 )
 

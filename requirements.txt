@@ -1,4 +1,4 @@
-langchain
-openai
-colorama
-python-dotenv
+langchain==0.3.13
+langchain-ollama==0.2.0
+langchain-core==0.3.28
+colorama==0.4.6
