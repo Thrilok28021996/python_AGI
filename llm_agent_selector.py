@@ -115,16 +115,22 @@ class LLMAgentSelector:
 3. Consider the natural workflow order (e.g., Product Manager before Developers, Developers before QA)
 4. Think about what specialists are required
 
-**RESPOND IN THIS EXACT FORMAT:**
+**IMPORTANT: YOU MUST RESPOND IN THIS EXACT FORMAT (DO NOT DEVIATE):**
 
 SELECTED AGENTS:
-[List agent names, one per line, in workflow order]
+agent_name_1
+agent_name_2
+agent_name_3
+agent_name_4
 
 REASONING:
-[Explain why each agent is needed]
+- agent_name_1: Why this agent is needed
+- agent_name_2: Why this agent is needed
+- agent_name_3: Why this agent is needed
+- agent_name_4: Why this agent is needed
 
 WORKFLOW:
-[Choose: sequential, collaborative, or hierarchical]
+[Choose ONLY ONE: sequential, collaborative, or hierarchical]
 
 PRIORITIES:
 [Which agents are most critical vs nice-to-have]
@@ -213,10 +219,34 @@ Now analyze the task and respond:
             elif current_section == "priorities" and line_stripped:
                 priorities.append(line_stripped)
 
-        # Fallback if parsing failed
+        # ALWAYS parse agents from reasoning section as well (to catch when LLM puts them there)
+        reasoning_agents = []
+        for line in reasoning.split('\n'):
+            # Look for pattern: "- agent_name:" or "- agent_name (extra text):"
+            # The pattern now allows for optional text between agent name and colon
+            match = re.search(r'-\s*(\w+)', line)
+            if match:
+                agent_candidate = match.group(1).lower().strip()
+                if agent_candidate in self.AVAILABLE_AGENTS:
+                    if agent_candidate not in reasoning_agents:
+                        reasoning_agents.append(agent_candidate)
+
+        # Merge agents from both sections (reasoning takes priority if more complete)
+        if reasoning_agents and len(reasoning_agents) > len(agents):
+            if verbose and len(agents) > 0:
+                print(colorama.Fore.YELLOW + f"⚠️  Found more agents in REASONING ({len(reasoning_agents)}) than SELECTED AGENTS ({len(agents)})" + colorama.Style.RESET_ALL)
+                print(colorama.Fore.GREEN + f"✓ Using {len(reasoning_agents)} agents from reasoning section" + colorama.Style.RESET_ALL)
+            agents = reasoning_agents
+        elif not agents and reasoning_agents:
+            # No agents in SELECTED AGENTS, but found some in reasoning
+            if verbose:
+                print(colorama.Fore.YELLOW + "⚠️  No agents in SELECTED AGENTS section. Using reasoning section." + colorama.Style.RESET_ALL)
+            agents = reasoning_agents
+
+        # Ultimate fallback
         if not agents:
             if verbose:
-                print(colorama.Fore.YELLOW + "⚠️  Could not parse agents from LLM response. Using defaults." + colorama.Style.RESET_ALL)
+                print(colorama.Fore.YELLOW + "⚠️  Could not parse agents anywhere. Using defaults." + colorama.Style.RESET_ALL)
             agents = ["product_manager", "backend_developer", "qa_tester"]
 
         if verbose:

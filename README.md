@@ -2,6 +2,19 @@
 
 Build intelligent multi-agent systems where specialized AI agents work together like a real company team.
 
+## 🚀 New to Python AGI? Start Here!
+
+👉 **Read the [COMPLETE_TUTORIAL.md](COMPLETE_TUTORIAL.md)** for a comprehensive guide covering installation, usage, and all features.
+
+**Quick 3-Step Start:**
+```bash
+ollama pull llama3.2                          # 1. Get AI model
+pip install -r requirements.txt               # 2. Install dependencies
+python build_project.py "Your idea" --llm     # 3. Build a project!
+```
+
+---
+
 ## 🎯 What's Inside
 
 This project includes two powerful agent systems:
@@ -42,7 +55,31 @@ pip install -r requirements.txt
 
 ## 🚀 Quick Start
 
-### 🌟 NEW: Auto-Agent Router (Easiest Way!)
+### ⭐ NEW: Build Real Projects with Code Files! (Like Claude Code!)
+
+**Agents create actual code files, analyze them, and improve iteratively!**
+
+```bash
+# One command creates a complete project with real files!
+python build_project.py "Create a REST API for user management" --llm
+
+# Result: Complete project with actual Python files, tests, README, etc.
+# Saved to: ./generated_projects/your_project/
+```
+
+**Features:**
+- ✅ Agents create real code files (not just text)
+- ✅ Multiple improvement iterations
+- ✅ Smart auto-stop when project is complete
+- ✅ Code review and bug fixes
+- ✅ Complete working projects
+- ✅ Just like Claude Code, but with multiple specialist agents!
+
+**Read the guide:** [PROJECT_BUILDER_GUIDE.md](PROJECT_BUILDER_GUIDE.md)
+
+---
+
+### 🌟 Auto-Agent Router (Quick Tasks)
 
 **Just describe your task - agents are selected automatically!**
 
@@ -50,9 +87,8 @@ pip install -r requirements.txt
 # One command - that's it!
 python run_task.py "Build a REST API for user management"
 
-# Or try:
-python run_task.py "Create a secure authentication system with tests"
-python run_task.py "Design a scalable microservices architecture"
+# With AI selection (smarter!)
+python run_task.py "Create a secure authentication system" --llm
 ```
 
 The system automatically:
@@ -183,7 +219,23 @@ ollama pull phi        # For fast responses
 
 ## 📖 Documentation
 
+### 📚 Essential Reading
+
+- **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - 🆕 **Navigate all documentation** - Find what you need fast!
+- **[COMPLETE_TUTORIAL.md](COMPLETE_TUTORIAL.md)** - 🆕 **START HERE!** Complete tutorial covering everything
+- **[CODE_REVIEW_REPORT.md](CODE_REVIEW_REPORT.md)** - 🆕 Comprehensive code quality analysis
+- **[CODEBASE_SUMMARY.md](CODEBASE_SUMMARY.md)** - 🆕 Complete codebase overview
+
+### Feature-Specific Guides
+
 - **[MULTI_AGENT_GUIDE.md](MULTI_AGENT_GUIDE.md)** - Complete multi-agent system guide
+- **[PROJECT_BUILDER_GUIDE.md](PROJECT_BUILDER_GUIDE.md)** - File-aware project builder guide
+- **[AUTO_ROUTER_GUIDE.md](AUTO_ROUTER_GUIDE.md)** - Agent selection guide
+- **[LLM_SELECTION_GUIDE.md](LLM_SELECTION_GUIDE.md)** - 🆕 **Which LLM for which agent** - Model selection guide
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture overview
+
+### Code Reference
+
 - **[specialized_agent.py](specialized_agent.py)** - Agent implementation
 - **[agent_team.py](agent_team.py)** - Team coordination
 - **[multi_model_config.py](multi_model_config.py)** - Model configuration

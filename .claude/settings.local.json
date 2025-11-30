@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(python test_5_agents.py:*)"
     ],
     "deny": [],
     "ask": []

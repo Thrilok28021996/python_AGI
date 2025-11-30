@@ -1,7 +1,7 @@
-## CAMEL Role-Playing Autonomous Cooperative Agents
-## CAMEL: Communicative Agents for "Mind" Exploration of Large Scale Language Model Society
+# CAMEL Role-Playing Autonomous Cooperative Agents
+# CAMEL: Communicative Agents for "Mind" Exploration of Large Scale Language Model Society
 
-## Import LangChain related modules
+# Import LangChain related modules
 import colorama
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts.chat import HumanMessagePromptTemplate
@@ -19,7 +19,7 @@ task = """Create an Application that can write blogs using ollama Models. The Ge
 word_limit = 100  # word limit for task brainstorming
 
 
-### Create a task specify agent for brainstorming and get the specified task
+# Create a task specify agent for brainstorming and get the specified task
 task_specifier_sys_msg = SystemMessage(content="You can make a task more specific.")
 task_specifier_prompt = """Here is a task that {assistant_role_name} will help {user_role_name} to complete: {task}.
 Please make it more specific. Be creative and imaginative.
@@ -44,7 +44,7 @@ print(
 specified_task = specified_task_msg.content
 
 
-### Create AI assistant agent and AI user agent from obtained system messages
+# Create AI assistant agent and AI user agent from obtained system messages
 assistant_sys_msg, user_sys_msg = get_sys_msgs(
     assistant_role_name, user_role_name, specified_task
 )
@@ -69,7 +69,7 @@ user_msg = HumanMessage(content=f"{assistant_sys_msg.content}")
 user_msg = assistant_agent.step(user_msg)
 
 
-### Start role-playing session to solve the task!
+# Start role-playing session to solve the task!
 print(colorama.Fore.RED + f"Original task prompt:\n{task}\n" + colorama.Style.RESET_ALL)
 print(
     colorama.Fore.CYAN

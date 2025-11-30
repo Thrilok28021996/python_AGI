@@ -3,8 +3,8 @@ from assistant_prompt import assistant_inception_prompt
 from user_prompt import user_inception_prompt
 
 
-### Create a helper to get system messages for AI assistant
-### and AI user from role names and the task
+# Create a helper to get system messages for AI assistant
+# and AI user from role names and the task
 
 
 def get_sys_msgs(assistant_role_name: str, user_role_name: str, task: str):

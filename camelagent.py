@@ -4,7 +4,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, System
 from langchain_ollama import ChatOllama
 
 
-## Define a CAMEL agent helper class
+# Define a CAMEL agent helper class
 class CAMELAgent:
     def __init__(
         self,

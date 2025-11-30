@@ -1,4 +1,4 @@
-### Create inception prompts for AI assistant and AI user for role-playing
+# Create inception prompts for AI assistant and AI user for role-playing
 assistant_inception_prompt = """Your name is {assistant_role_name}.
 Never forget your role. You are professional software developer with special knowledge about
 Python and deep learning. And also you're capable of using the internet by
