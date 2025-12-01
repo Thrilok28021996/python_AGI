@@ -51,12 +51,96 @@ class SpecializedAgent:
 
         expertise_str = ", ".join(self.expertise)
 
+        # Add special requirements for developers
+        developer_requirements = ""
+        if "developer" in self.role.lower():
+            developer_requirements = """
+
+🚨 CRITICAL REQUIREMENT FOR DEVELOPERS:
+=======================================
+YOU MUST WRITE ACTUAL, WORKING CODE in EVERY response.
+
+Requirements:
+- Use proper code blocks: ```python, ```javascript, ```html, etc.
+- Provide COMPLETE, RUNNABLE code (not pseudocode or outlines)
+- Include all necessary imports and dependencies
+- Add brief comments explaining complex logic
+- Ensure code is production-ready and follows best practices
+
+DO NOT just discuss or plan - WRITE THE CODE!
+If you're discussing architecture, ALSO provide code examples.
+=======================================
+"""
+
+        # Add special requirements for QA testers
+        qa_requirements = ""
+        if "qa" in self.role.lower() or "tester" in self.role.lower():
+            qa_requirements = """
+
+🚨 CRITICAL REQUIREMENT FOR QA TESTERS:
+=======================================
+YOU MUST CREATE ACTUAL TEST FILES in EVERY iteration.
+
+MANDATORY Test File Creation:
+- Python projects: Create test_*.py files using pytest
+- JavaScript projects: Create *.test.js or *.spec.js files using jest
+- Always create comprehensive test files, not just test plans
+
+Test File Naming (CRITICAL):
+- Python: test_calculator.py, test_api.py, test_utils.py
+- JavaScript: calculator.test.js, api.test.js, utils.test.js
+- Use the EXACT naming convention for the framework to find tests
+
+What Tests MUST Include:
+- Test all core functionality
+- Test edge cases (null, zero, negative numbers, empty strings, etc.)
+- Test error handling
+- Use proper assertions
+- Include at least 5-10 test cases minimum
+
+Example Python Test File (ALWAYS CREATE LIKE THIS):
+```python
+# test_calculator.py
+import pytest
+from calculator import Calculator
+
+def test_add():
+    calc = Calculator()
+    assert calc.add(2, 3) == 5
+
+def test_divide_by_zero():
+    calc = Calculator()
+    with pytest.raises(ValueError):
+        calc.divide(10, 0)
+```
+
+Example JavaScript Test File (ALWAYS CREATE LIKE THIS):
+```javascript
+// calculator.test.js
+const Calculator = require('./calculator');
+
+test('adds 1 + 2 to equal 3', () => {
+  const calc = new Calculator();
+  expect(calc.add(1, 2)).toBe(3);
+});
+
+test('throws error on divide by zero', () => {
+  const calc = new Calculator();
+  expect(() => calc.divide(10, 0)).toThrow();
+});
+```
+
+DO NOT just write test plans or test cases as text!
+ALWAYS create actual test files that can be executed!
+=======================================
+"""
+
         content = f"""You are {self.name}, a {self.role} in a software development company.
 
 Your expertise includes: {expertise_str}
 
 Your responsibilities as {self.role}:
-{self._get_role_responsibilities()}
+{self._get_role_responsibilities()}{developer_requirements}{qa_requirements}
 
 Communication style:
 - Be professional and focused
@@ -116,11 +200,12 @@ Questions/Concerns:
 - Integrate with backend APIs
 - Write frontend tests""",
 
-            "QA Tester": """- Write test cases
-- Perform manual and automated testing
+            "QA Tester": """- CREATE test files (test_*.py or *.test.js) - MANDATORY!
+- Write comprehensive automated tests for all functionality
+- Test edge cases and error handling
 - Find and report bugs
 - Verify bug fixes
-- Ensure product quality""",
+- Ensure product quality through actual executable tests""",
 
             "DevOps Engineer": """- Set up CI/CD pipelines
 - Manage infrastructure
@@ -144,7 +229,13 @@ Questions/Concerns:
 - Create API documentation
 - Write user guides
 - Ensure documentation clarity
-- Keep documentation up-to-date"""
+- Keep documentation up-to-date""",
+
+            "Data Scientist": """- Analyze data and extract insights
+- Build and train machine learning models
+- Create data visualizations
+- Write data processing code
+- Validate model performance and accuracy"""
         }
 
         return responsibilities.get(self.role, "- Perform assigned tasks\n- Collaborate with team")
@@ -250,6 +341,12 @@ AGENT_CONFIGS = {
         "expertise": ["Documentation", "API Docs", "User Guides"],
         "model": "phi3:latest",  # Fast and clear
         "temperature": 0.6
+    },
+    "data_scientist": {
+        "role": "Data Scientist",
+        "expertise": ["Data Analysis", "Machine Learning", "Statistics", "Data Visualization"],
+        "model": "qwen2.5-coder:latest",  # Good for data and ML code
+        "temperature": 0.4
     }
 }
 

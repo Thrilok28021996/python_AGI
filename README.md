@@ -26,6 +26,8 @@ Two agents collaborate on tasks through structured dialogue - perfect for learni
 Build complete "AI companies" with specialized roles:
 - 10+ pre-built agent types (CEO, Developer, QA, Designer, etc.)
 - 3 workflow patterns (Sequential, Collaborative, Hierarchical)
+- **🔄 Intelligent Task Rewriting** - Automatically clarifies your ideas for better results!
+- **🧪 Automated Test-Driven Development (TDD)** - Tests run automatically, bugs fixed automatically!
 - Support for multiple Ollama models
 - Production-ready architecture
 
@@ -223,15 +225,23 @@ ollama pull phi        # For fast responses
 
 - **[DOCUMENTATION_INDEX.md](DOCUMENTATION_INDEX.md)** - 🆕 **Navigate all documentation** - Find what you need fast!
 - **[COMPLETE_TUTORIAL.md](COMPLETE_TUTORIAL.md)** - 🆕 **START HERE!** Complete tutorial covering everything
+- **[CROSS_CHECK_REPORT.md](CROSS_CHECK_REPORT.md)** - 🆕 **✅ VERIFIED!** All code checked & bugs fixed
+- **[FIX_DUPLICATE_FILES_AND_TESTING.md](FIX_DUPLICATE_FILES_AND_TESTING.md)** - 🆕 **✅ FIXED!** Duplicate files & testing issues resolved
+- **[AUTOMATIC_TEST_CREATION.md](AUTOMATIC_TEST_CREATION.md)** - 🆕 **🧪 AUTO-TESTS!** QA agents create tests automatically
 - **[CODE_REVIEW_REPORT.md](CODE_REVIEW_REPORT.md)** - 🆕 Comprehensive code quality analysis
+- **[FIXES_APPLIED.md](FIXES_APPLIED.md)** - 🆕 **✅ All bugs fixed!** - Summary of fixes
 - **[CODEBASE_SUMMARY.md](CODEBASE_SUMMARY.md)** - 🆕 Complete codebase overview
 
 ### Feature-Specific Guides
 
+- **[TASK_REWRITING_GUIDE.md](TASK_REWRITING_GUIDE.md)** - 🆕 🔄 **TASK CLARIFICATION!** - Auto-enhances project descriptions
+- **[TEST_DRIVEN_DEVELOPMENT_GUIDE.md](TEST_DRIVEN_DEVELOPMENT_GUIDE.md)** - 🆕 🧪 **AUTOMATED TESTING!** - Tests run & fix bugs automatically
 - **[MULTI_AGENT_GUIDE.md](MULTI_AGENT_GUIDE.md)** - Complete multi-agent system guide
 - **[PROJECT_BUILDER_GUIDE.md](PROJECT_BUILDER_GUIDE.md)** - File-aware project builder guide
 - **[AUTO_ROUTER_GUIDE.md](AUTO_ROUTER_GUIDE.md)** - Agent selection guide
 - **[LLM_SELECTION_GUIDE.md](LLM_SELECTION_GUIDE.md)** - 🆕 **Which LLM for which agent** - Model selection guide
+- **[CODE_GENERATION_PROBLEM_SOLUTION.md](CODE_GENERATION_PROBLEM_SOLUTION.md)** - 🆕 **⚠️ Agents discuss but don't code?** - Complete solutions
+- **[CODE_PERSISTENCE_ANALYSIS.md](CODE_PERSISTENCE_ANALYSIS.md)** - 🆕 **💾 Is code stored & accessible?** - Persistence guide
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture overview
 
 ### Code Reference

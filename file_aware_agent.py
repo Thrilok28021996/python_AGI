@@ -2,6 +2,7 @@
 File-Aware Agent System
 Agents can create, read, edit, and analyze actual code files
 Similar to how Claude Code works - iterative development with real files
+Includes automated testing and test-driven development (TDD) workflow
 """
 
 import os
@@ -10,6 +11,7 @@ from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 from specialized_agent import SpecializedAgent
+from test_executor import TestExecutor
 import colorama
 import re
 
@@ -106,12 +108,19 @@ class FileManager:
         try:
             full_path = self.project_path / file_path
 
-            # Backup old version
+            # Only backup if file exists and content is different
             if full_path.exists():
-                backup_path = full_path.with_suffix(full_path.suffix + '.backup')
                 with open(full_path, 'r') as f:
+                    old_content = f.read()
+
+                # Only create backup if content is actually different
+                if old_content != content:
+                    backup_path = full_path.with_suffix(full_path.suffix + '.backup')
                     with open(backup_path, 'w') as b:
-                        b.write(f.read())
+                        b.write(old_content)
+                else:
+                    # Content is same, no need to update
+                    return True
 
             with open(full_path, 'w') as f:
                 f.write(content)
@@ -334,6 +343,16 @@ IMPORTANT:
 
         for match in matches:
             file_path = match[0].strip()
+
+            # Sanitize filename - remove backticks, quotes, and invalid characters
+            file_path = file_path.replace('`', '').replace('"', '').replace("'", '')
+            file_path = re.sub(r'[^\w\s\-_./]', '', file_path)  # Remove invalid chars
+            file_path = file_path.strip()
+
+            # Skip if filename is empty after sanitization
+            if not file_path:
+                continue
+
             content = match[1].strip()
 
             # Determine operation type
@@ -367,10 +386,13 @@ def create_project_workflow(
     output_dir: str = "./generated_projects",
     max_iterations: int = 10,
     stop_on_complete: bool = True,
-    min_iterations: int = 2
+    min_iterations: int = 2,
+    enable_testing: bool = True,
+    test_command: Optional[str] = None
 ) -> Dict:
     """
     Complete workflow: agents create a project with actual files
+    Includes automated testing and test-driven development (TDD) workflow
 
     Args:
         project_name: Name of the project
@@ -380,9 +402,11 @@ def create_project_workflow(
         max_iterations: Maximum improvement cycles (default: 10)
         stop_on_complete: Stop when agents signal completion (default: True)
         min_iterations: Minimum iterations before checking completion (default: 2)
+        enable_testing: Run tests after each iteration and provide feedback (default: True)
+        test_command: Custom test command (default: auto-detect)
 
     Returns:
-        Dict with project path and results
+        Dict with project path, test results, and operations
     """
     print(colorama.Fore.MAGENTA + f"""
 ╔═══════════════════════════════════════════════════════════════════════╗
@@ -398,6 +422,12 @@ def create_project_workflow(
     # Create project directory
     project_path = os.path.join(output_dir, project_name)
     file_manager = FileManager(project_path)
+
+    # Initialize test executor if testing is enabled
+    test_executor = None
+    if enable_testing:
+        test_executor = TestExecutor(project_path)
+        print(colorama.Fore.CYAN + "🧪 Testing enabled: Will run tests after each iteration\n" + colorama.Style.RESET_ALL)
 
     # Create file-aware agents
     file_agents = []
@@ -423,6 +453,7 @@ def create_project_workflow(
 
     all_operations = []
     completion_signals = []  # Track completion signals from agents
+    test_results = None  # Initialize test results
 
     # Iteration loop: create, review, improve
     for iteration in range(max_iterations):
@@ -508,6 +539,73 @@ Only do this if:
                 })
                 print(colorama.Fore.CYAN + f"  ✓ {agent.name} signals: Project looks complete" + colorama.Style.RESET_ALL)
 
+        # After all agents in this iteration, run tests if enabled
+        if test_executor and iteration > 0:  # Skip testing on first iteration (no code yet)
+            print(colorama.Fore.CYAN + f"\n{'='*80}")
+            print(f"RUNNING TESTS FOR ITERATION {iteration + 1}")
+            print(f"{'='*80}\n" + colorama.Style.RESET_ALL)
+
+            test_results = test_executor.run_tests(test_command)
+
+            # If tests failed, provide feedback to developers for next iteration
+            if not test_results["success"] and iteration < max_iterations - 1:
+                print(colorama.Fore.YELLOW + f"\n⚠️ Tests failed! Providing feedback to developers for fixes...\n" + colorama.Style.RESET_ALL)
+
+                # Generate feedback for developers
+                test_feedback = test_executor.format_feedback_for_developer(test_results)
+
+                # Find developer agents to give them test feedback
+                developer_agents = [a for a in file_agents if "developer" in a.role.lower()]
+
+                if developer_agents:
+                    print(colorama.Fore.YELLOW + f"🔧 Running fix iteration with {len(developer_agents)} developer(s)...\n" + colorama.Style.RESET_ALL)
+
+                    for dev_agent in developer_agents:
+                        print(colorama.Fore.YELLOW + f"\n>>> {dev_agent.name} fixing test failures...\n" + colorama.Style.RESET_ALL)
+
+                        # Build context with test failures
+                        existing_files = file_manager.list_files()
+                        files_content = ""
+                        for file_path in existing_files:
+                            content = file_manager.read_file(file_path)
+                            files_content += f"\n--- {file_path} ---\n{content}\n"
+
+                        fix_context = f"""{test_feedback}
+
+Current Project Files:
+{files_content}
+
+Your task: Fix the bugs causing test failures.
+- Read the test files to understand what's expected
+- Identify the bugs in the implementation
+- Provide fixed code using ```update: path/to/file.ext format
+- Explain what was wrong and how you fixed it
+
+CRITICAL: Focus ONLY on fixing the failing tests. Do not add new features."""
+
+                        # Get developer's fix
+                        fix_response = dev_agent.step(HumanMessage(content=fix_context))
+
+                        # Execute file operations
+                        print(colorama.Fore.GREEN + f"\n{dev_agent.name} applying fixes:" + colorama.Style.RESET_ALL)
+                        fix_operations = dev_agent.process_and_execute_file_operations(fix_response.content)
+                        all_operations.append({
+                            "iteration": iteration + 1,
+                            "agent": dev_agent.name,
+                            "type": "test_fix",
+                            "operations": fix_operations
+                        })
+
+                        if fix_operations["updated"]:
+                            print(colorama.Fore.GREEN + f"  Fixed {len(fix_operations['updated'])} files" + colorama.Style.RESET_ALL)
+
+                    # Re-run tests after fixes
+                    print(colorama.Fore.CYAN + f"\n{'='*80}")
+                    print(f"RE-RUNNING TESTS AFTER FIXES")
+                    print(f"{'='*80}\n" + colorama.Style.RESET_ALL)
+
+                    test_results = test_executor.run_tests(test_command)
+
         # After all agents in this iteration, check if we should stop
         if stop_on_complete and iteration >= min_iterations - 1:
             # Calculate percentage of agents who signaled completion this iteration
@@ -538,13 +636,20 @@ Only do this if:
     if completion_signals:
         print(colorama.Fore.CYAN + f"\n✓ Completion signals received from: {', '.join([s['agent'] for s in completion_signals])}" + colorama.Style.RESET_ALL)
 
+    # Show final test results if testing was enabled
+    if test_executor:
+        print(colorama.Fore.CYAN + f"\n📊 Test Summary:" + colorama.Style.RESET_ALL)
+        print(test_executor.get_test_history_summary())
+
     return {
         "project_path": project_path,
         "files": final_files,
         "operations": all_operations,
         "file_manager": file_manager,
         "completion_signals": completion_signals,
-        "stopped_early": len(completion_signals) > 0 and stop_on_complete
+        "stopped_early": len(completion_signals) > 0 and stop_on_complete,
+        "test_history": test_executor.test_history if test_executor else [],
+        "final_test_results": test_results if test_executor else None
     }
 
 

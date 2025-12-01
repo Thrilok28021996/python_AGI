@@ -3,7 +3,11 @@
     "allow": [
       "Bash(python3:*)",
       "Bash(python -m py_compile:*)",
-      "Bash(python test_5_agents.py:*)"
+      "Bash(python test_5_agents.py:*)",
+      "Bash(find:*)",
+      "Bash(for:*)",
+      "Bash(do echo \"=== $file ===\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

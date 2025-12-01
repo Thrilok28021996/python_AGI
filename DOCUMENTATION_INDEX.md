@@ -33,6 +33,7 @@ Use the sections below to find specific information quickly.
 
 | Document | Purpose | Best For |
 |----------|---------|----------|
+| **[TEST_DRIVEN_DEVELOPMENT_GUIDE.md](TEST_DRIVEN_DEVELOPMENT_GUIDE.md)** | 🧪 Automated testing & TDD | Quality-first development |
 | **[PROJECT_BUILDER_GUIDE.md](PROJECT_BUILDER_GUIDE.md)** | Build projects with files | Creating real projects |
 | **[MULTI_AGENT_GUIDE.md](MULTI_AGENT_GUIDE.md)** | Multi-agent workflows | Team coordination |
 | **[AUTO_ROUTER_GUIDE.md](AUTO_ROUTER_GUIDE.md)** | Agent selection | Choosing right agents |
@@ -152,7 +153,7 @@ Specific Features:
    - Comparison
    - Examples
 
-### Technical References (3 files)
+### Technical References (4 files)
 
 8. **[CODE_REVIEW_REPORT.md](CODE_REVIEW_REPORT.md)**
    - Code quality analysis
@@ -163,21 +164,29 @@ Specific Features:
    - Recommendations
    - Final grade: A-
 
-9. **[MODEL_OPTIMIZATION_SUMMARY.md](MODEL_OPTIMIZATION_SUMMARY.md)**
+9. **[COMPREHENSIVE_CODEBASE_REVIEW.md](COMPREHENSIVE_CODEBASE_REVIEW.md)** 🆕
+   - Complete codebase audit
+   - 4 bugs found and fixed
+   - Syntax, import, logic checks
+   - Runtime error prevention
+   - File operations testing
+   - Production readiness report
+
+10. **[MODEL_OPTIMIZATION_SUMMARY.md](MODEL_OPTIMIZATION_SUMMARY.md)**
    - Model assignments
    - Optimization rationale
    - Available models
    - Agent-model mapping
    - Performance tips
 
-10. **[COMPLETION_DETECTION_UPDATE.md](COMPLETION_DETECTION_UPDATE.md)**
+11. **[COMPLETION_DETECTION_UPDATE.md](COMPLETION_DETECTION_UPDATE.md)**
     - Smart auto-stop feature
     - How it works
     - Configuration
     - Examples
     - Benefits
 
-11. **[LLM_SELECTION_GUIDE.md](LLM_SELECTION_GUIDE.md)** 🆕
+12. **[LLM_SELECTION_GUIDE.md](LLM_SELECTION_GUIDE.md)** 🆕
     - Which LLM for which agent
     - Model categories and use cases
     - Performance optimization
@@ -214,6 +223,7 @@ Specific Features:
 
 #### ...review code quality
 → [CODE_REVIEW_REPORT.md](CODE_REVIEW_REPORT.md) (20 min read)
+→ [COMPREHENSIVE_CODEBASE_REVIEW.md](COMPREHENSIVE_CODEBASE_REVIEW.md) (15 min read) 🆕
 
 #### ...optimize model usage
 → [MODEL_OPTIMIZATION_SUMMARY.md](MODEL_OPTIMIZATION_SUMMARY.md) (10 min read)
@@ -263,8 +273,8 @@ Specific Features:
 |----------|-------|-------------|
 | Core Docs | 4 | ~1,500 |
 | Feature Guides | 3 | ~1,200 |
-| Technical Refs | 3 | ~1,300 |
-| **Total** | **10** | **~4,000+** |
+| Technical Refs | 4 | ~1,800 |
+| **Total** | **11** | **~4,500+** |
 
 ---
 
@@ -439,7 +449,7 @@ All docs → ARCHITECTURE.md → CODE_REVIEW_REPORT.md → Code
 
 ---
 
-**Last Updated:** 2025-11-30
-**Total Documents:** 10
-**Total Pages:** ~40 (if printed)
+**Last Updated:** 2025-12-01
+**Total Documents:** 11
+**Total Pages:** ~45 (if printed)
 **Maintenance Status:** Active ✅

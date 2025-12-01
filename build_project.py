@@ -13,6 +13,7 @@ import argparse
 import colorama
 from file_aware_agent import create_project_workflow
 from llm_agent_selector import LLMAgentSelector
+from task_rewriter import TaskRewriter, rewrite_task_for_agents
 
 colorama.init(autoreset=True)
 
@@ -64,6 +65,21 @@ def main():
         default=2,
         help="Minimum iterations before checking for completion (default: 2)"
     )
+    parser.add_argument(
+        "--no-testing",
+        action="store_true",
+        help="Disable automated testing (testing is enabled by default)"
+    )
+    parser.add_argument(
+        "--test-command",
+        default=None,
+        help="Custom test command (default: auto-detect pytest, jest, etc.)"
+    )
+    parser.add_argument(
+        "--show-rewrite",
+        action="store_true",
+        help="Show task rewriting comparison and ask for approval"
+    )
 
     args = parser.parse_args()
 
@@ -87,6 +103,40 @@ def main():
             print(colorama.Fore.RED + "❌ No project description provided" + colorama.Style.RESET_ALL)
             show_examples()
             return
+
+    # Store original task
+    original_task = task
+
+    # ALWAYS rewrite task for clarity (this is now mandatory)
+    print(colorama.Fore.CYAN + "\n🔄 Analyzing and clarifying task requirements..." + colorama.Style.RESET_ALL)
+
+    try:
+        rewriter = TaskRewriter(model_name="llama3.2", temperature=0.3)
+        rewrite_result = rewriter.rewrite_task(original_task)
+
+        # Show comparison if --show-rewrite flag is used
+        if args.show_rewrite:
+            rewriter.compare_tasks(rewrite_result["original"], rewrite_result["rewritten"])
+
+            # Ask user to approve
+            print(colorama.Fore.YELLOW + "\n✅ Use rewritten task? (y/n) [y]: " + colorama.Style.RESET_ALL, end="")
+            approval = input().strip().lower()
+
+            if approval in ['', 'y', 'yes']:
+                task = rewrite_result["rewritten"]
+                print(colorama.Fore.GREEN + "✓ Using rewritten task\n" + colorama.Style.RESET_ALL)
+            else:
+                task = original_task
+                print(colorama.Fore.YELLOW + "✓ Using original task\n" + colorama.Style.RESET_ALL)
+        else:
+            # Auto-use rewritten task (default behavior)
+            task = rewrite_result["rewritten"]
+            print(colorama.Fore.GREEN + "✓ Task clarified and enhanced\n" + colorama.Style.RESET_ALL)
+
+    except Exception as e:
+        print(colorama.Fore.YELLOW + f"⚠️ Could not rewrite task: {e}" + colorama.Style.RESET_ALL)
+        print(colorama.Fore.YELLOW + "✓ Using original task\n" + colorama.Style.RESET_ALL)
+        task = original_task
 
     # Generate project name if not provided
     if args.name:
@@ -137,7 +187,9 @@ def main():
         output_dir=args.output,
         max_iterations=args.iterations,
         stop_on_complete=not args.no_auto_stop,
-        min_iterations=args.min_iterations
+        min_iterations=args.min_iterations,
+        enable_testing=not args.no_testing,
+        test_command=args.test_command
     )
 
     # Final output
@@ -147,6 +199,19 @@ def main():
 
     iterations_completed = len(set(op['iteration'] for op in result['operations']))
 
+    # Build test results display
+    test_info = ""
+    if result.get('final_test_results'):
+        final_test = result['final_test_results']
+        if final_test.get('success'):
+            passed = final_test.get('passed', 0)
+            total = final_test.get('total_tests', 0)
+            test_info = f"\n✅ Tests: {passed}/{total} PASSING"
+        elif final_test.get('total_tests', 0) > 0:
+            failed = final_test.get('failed', 0)
+            total = final_test.get('total_tests', 0)
+            test_info = f"\n⚠️ Tests: {failed}/{total} FAILING (needs fixes)"
+
     print(colorama.Fore.GREEN + f"""
 
 ╔═══════════════════════════════════════════════════════════════════════╗
@@ -155,7 +220,7 @@ def main():
 
 📁 Project Location: {result['project_path']}
 📊 Files Created: {len(result['files'])}
-🔄 Iterations Completed: {iterations_completed}/{args.iterations}{completion_info}
+🔄 Iterations Completed: {iterations_completed}/{args.iterations}{completion_info}{test_info}
 📂 Project Structure:
 {chr(10).join('   ' + f for f in result['files'])}
 
@@ -198,6 +263,8 @@ def show_examples():
     print(colorama.Fore.MAGENTA + "\n\n💡 Pro Tips:" + colorama.Style.RESET_ALL)
     print("   • Use --llm to let AI select the best team")
     print("   • Use --iterations 5 for more refinement")
+    print("   • Testing is enabled by default (use --no-testing to disable)")
+    print("   • Use --test-command 'pytest -v' for custom test commands")
     print("   • Use --agents backend_developer frontend_developer qa_tester for specific team")
     print("   • Auto-stop is enabled by default - agents will stop when task is complete")
     print("   • Use --no-auto-stop to force all iterations")

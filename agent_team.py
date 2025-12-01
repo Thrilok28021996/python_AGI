@@ -150,6 +150,10 @@ class AgentTeam:
                 # Get agent response
                 response = agent.step(message)
 
+                # Validate code output for developers
+                if not self._validate_code_output(agent.role, response.content):
+                    print(colorama.Fore.YELLOW + f"⚠️  {agent.name} didn't provide code. Requesting code..." + colorama.Style.RESET_ALL)
+
                 # Store result
                 result = {
                     "round": round_num + 1,
@@ -171,7 +175,55 @@ class AgentTeam:
                 agent = self.get_agent(agent_name)
                 context_parts.append(f"\n{agent.name} ({agent.role}) said:\n{response}\n")
 
-            context_parts.append("\nBased on the discussion above, provide your next input:")
+            # Build role-specific instructions for next round
+            context_parts.append("\n" + "="*60 + "\n")
+
+            # Add specific instructions for each agent type
+            for agent_name in agents:
+                agent = self.get_agent(agent_name)
+                role_lower = agent.role.lower()
+
+                if "developer" in role_lower:
+                    context_parts.append(f"""
+⚠️ {agent.name} ({agent.role}): You MUST provide actual, working code in ```language blocks.
+   DO NOT just discuss - WRITE COMPLETE, RUNNABLE CODE.
+""")
+                elif "product" in role_lower or "manager" in role_lower:
+                    context_parts.append(f"""
+📋 {agent.name} ({agent.role}): Provide requirements, user stories, or specifications.
+   NO CODE - Focus on WHAT to build, not HOW.
+""")
+                elif "designer" in role_lower:
+                    context_parts.append(f"""
+🎨 {agent.name} ({agent.role}): Provide design specifications, wireframes, UI/UX guidance.
+   NO CODE - Focus on visual design and user experience.
+""")
+                elif "qa" in role_lower or "tester" in role_lower:
+                    context_parts.append(f"""
+🧪 {agent.name} ({agent.role}): Provide test cases, test code, or quality feedback.
+   You CAN write test code, but focus on testing strategy.
+""")
+                elif "writer" in role_lower:
+                    context_parts.append(f"""
+📝 {agent.name} ({agent.role}): Provide documentation, API docs, or user guides.
+   NO CODE - Focus on clear documentation.
+""")
+                elif "devops" in role_lower:
+                    context_parts.append(f"""
+⚙️ {agent.name} ({agent.role}): Provide infrastructure code, deployment scripts, configs.
+   You CAN write infrastructure-as-code.
+""")
+                elif "security" in role_lower:
+                    context_parts.append(f"""
+🔒 {agent.name} ({agent.role}): Provide security analysis, vulnerability reports, recommendations.
+   Focus on security review, not implementation.
+""")
+                else:
+                    context_parts.append(f"""
+💼 {agent.name} ({agent.role}): Provide your expert input based on your role.
+""")
+
+            context_parts.append("\nBased on the discussion above, provide your next contribution:\n")
             current_context = "\n".join(context_parts)
 
             # Check for convergence
@@ -331,6 +383,47 @@ Provide:
         # Placeholder: just check if responses mention "complete" or "done"
         completion_keywords = ["complete", "finished", "done", "ready", "approved"]
         return any(keyword in response.lower() for response in responses for keyword in completion_keywords)
+
+    def _validate_code_output(self, agent_role: str, response: str) -> bool:
+        """
+        Validate if technical roles produced appropriate output
+
+        Args:
+            agent_role: The role of the agent (e.g., "Backend Developer")
+            response: The agent's response content
+
+        Returns:
+            True if valid output for role
+        """
+        role_lower = agent_role.lower()
+
+        # Roles that MUST produce code
+        code_required_roles = ["developer", "devops"]
+        should_have_code = any(role in role_lower for role in code_required_roles)
+
+        # Roles that should NOT produce code
+        no_code_roles = ["product", "manager", "ceo", "designer", "security", "writer"]
+        should_not_have_code = any(role in role_lower for role in no_code_roles)
+
+        # QA/Tester can have code (tests) but it's optional
+        if "qa" in role_lower or "tester" in role_lower:
+            return True  # Always valid
+
+        # Non-technical roles should not have code
+        if should_not_have_code:
+            # These roles are always valid (they shouldn't code)
+            return True
+
+        # Developers MUST have code
+        if should_have_code:
+            has_code_blocks = "```" in response
+            lines = response.split('\n')
+            code_lines = [line for line in lines if line.strip() and not line.strip().startswith('#')]
+            has_substantial_code = len(code_lines) > 5
+            return has_code_blocks and has_substantial_code
+
+        # Default: valid
+        return True
 
     def get_summary(self) -> str:
         """Get a summary of the team's work"""
