@@ -14,6 +14,7 @@ import colorama
 from file_aware_agent import create_project_workflow
 from llm_agent_selector import LLMAgentSelector
 from task_rewriter import TaskRewriter, rewrite_task_for_agents
+from dynamic_team_builder import analyze_task_and_build_team
 
 colorama.init(autoreset=True)
 
@@ -79,6 +80,50 @@ def main():
         "--show-rewrite",
         action="store_true",
         help="Show task rewriting comparison and ask for approval"
+    )
+    parser.add_argument(
+        "--collaborative-review",
+        action="store_true",
+        default=True,
+        help="Enable collaborative code review between agents (default: enabled)"
+    )
+    parser.add_argument(
+        "--no-collaborative-review",
+        action="store_true",
+        help="Disable collaborative code review"
+    )
+    parser.add_argument(
+        "--security-scan",
+        action="store_true",
+        default=True,
+        help="Run security vulnerability scan (default: enabled)"
+    )
+    parser.add_argument(
+        "--no-security-scan",
+        action="store_true",
+        help="Disable security scanning"
+    )
+    parser.add_argument(
+        "--tdd",
+        action="store_true",
+        help="Use Test-Driven Development mode (write tests first)"
+    )
+    parser.add_argument(
+        "--auto-team",
+        action="store_true",
+        default=True,
+        help="Automatically build team based on project requirements (default: enabled)"
+    )
+    parser.add_argument(
+        "--no-auto-team",
+        action="store_true",
+        help="Disable automatic team building (use default or specified agents)"
+    )
+    parser.add_argument(
+        "--max-team-size",
+        type=int,
+        default=None,
+        help="Maximum team size (default: unlimited, determined by project complexity)"
     )
 
     args = parser.parse_args()
@@ -153,12 +198,41 @@ def main():
 
     # Select agents
     if args.agents:
-        # Use specified agents
+        # Use specified agents (user override)
         agents = [{"type": agent, "name": agent.capitalize()} for agent in args.agents]
-        print(colorama.Fore.YELLOW + f"👥 Using specified agents: {', '.join(args.agents)}\n" + colorama.Style.RESET_ALL)
+        print(colorama.Fore.YELLOW + f"👥 Using user-specified agents: {', '.join(args.agents)}\n" + colorama.Style.RESET_ALL)
+
+    elif not args.no_auto_team:
+        # DYNAMIC TEAM BUILDING (DEFAULT) - Like a real company!
+        print(colorama.Fore.MAGENTA + "🏢 Building dynamic team based on project requirements...\n" + colorama.Style.RESET_ALL)
+
+        try:
+            agents = analyze_task_and_build_team(
+                task=task,
+                max_agents=args.max_team_size,
+                user_specified_agents=None
+            )
+
+            if not agents:
+                # Fallback to default team
+                print(colorama.Fore.YELLOW + "⚠️ Could not build dynamic team, using default\n" + colorama.Style.RESET_ALL)
+                agents = [
+                    {"type": "lead_developer", "name": "Lead"},
+                    {"type": "backend_developer", "name": "Backend"},
+                    {"type": "qa_tester", "name": "QA"},
+                ]
+
+        except Exception as e:
+            print(colorama.Fore.YELLOW + f"⚠️ Error building dynamic team: {e}" + colorama.Style.RESET_ALL)
+            print(colorama.Fore.YELLOW + "✓ Using default development team\n" + colorama.Style.RESET_ALL)
+            agents = [
+                {"type": "lead_developer", "name": "Lead"},
+                {"type": "backend_developer", "name": "Backend"},
+                {"type": "qa_tester", "name": "QA"},
+            ]
 
     elif args.llm:
-        # Use LLM to select agents
+        # Use LLM to select agents (legacy method)
         print(colorama.Fore.MAGENTA + "🤖 Using AI to select optimal agents...\n" + colorama.Style.RESET_ALL)
 
         selector = LLMAgentSelector(model_name="mistral:latest")
@@ -170,11 +244,12 @@ def main():
         ]
 
     else:
-        # Default team for development projects
+        # Manual/fixed team
         print(colorama.Fore.YELLOW + "👥 Using default development team\n" + colorama.Style.RESET_ALL)
         agents = [
-            {"type": "backend_developer", "name": "Backend Dev"},
-            {"type": "qa_tester", "name": "QA Tester"},
+            {"type": "lead_developer", "name": "Lead"},
+            {"type": "backend_developer", "name": "Backend"},
+            {"type": "qa_tester", "name": "QA"},
         ]
 
     # Build the project
@@ -189,7 +264,11 @@ def main():
         stop_on_complete=not args.no_auto_stop,
         min_iterations=args.min_iterations,
         enable_testing=not args.no_testing,
-        test_command=args.test_command
+        test_command=args.test_command,
+        enable_collaborative_review=not args.no_collaborative_review,
+        enable_security_scan=not args.no_security_scan,
+        use_tdd=args.tdd,
+        enable_pm_coordination=True  # PM coordination enabled by default
     )
 
     # Final output
@@ -269,6 +348,12 @@ def show_examples():
     print("   • Auto-stop is enabled by default - agents will stop when task is complete")
     print("   • Use --no-auto-stop to force all iterations")
     print("   • Use --min-iterations 3 to require minimum iterations before checking completion")
+    print("\n" + colorama.Fore.GREEN + "🆕 NEW FEATURES:" + colorama.Style.RESET_ALL)
+    print("   • Collaborative code review is enabled by default (agents review each other's code)")
+    print("   • Security scanning is enabled by default (catches vulnerabilities)")
+    print("   • Use --tdd for Test-Driven Development (write tests first!)")
+    print("   • Use --no-collaborative-review to disable peer review")
+    print("   • Use --no-security-scan to disable security checks")
 
 
 if __name__ == "__main__":

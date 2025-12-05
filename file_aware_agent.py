@@ -15,6 +15,46 @@ from test_executor import TestExecutor
 import colorama
 import re
 
+# Import collaborative systems
+try:
+    from collaborative_review import CollaborativeReview, TeamReviewOrchestrator
+    COLLABORATIVE_REVIEW_AVAILABLE = True
+except ImportError:
+    COLLABORATIVE_REVIEW_AVAILABLE = False
+    print("⚠️ Collaborative review system not available")
+
+try:
+    from tdd_mode import TDDWorkflow
+    TDD_AVAILABLE = True
+except ImportError:
+    TDD_AVAILABLE = False
+    print("⚠️ TDD mode not available")
+
+try:
+    from security_scanner import SecurityScanner
+    SECURITY_SCAN_AVAILABLE = True
+except ImportError:
+    SECURITY_SCAN_AVAILABLE = False
+    print("⚠️ Security scanner not available")
+
+try:
+    from project_coordination import ProjectCoordinator
+    PROJECT_COORDINATION_AVAILABLE = True
+except ImportError:
+    PROJECT_COORDINATION_AVAILABLE = False
+    print("⚠️ Project coordination system not available")
+
+try:
+    from company_enhancements import (
+        ConflictResolver,
+        DocumentationGenerator,
+        PerformanceAnalytics
+    )
+    COMPANY_ENHANCEMENTS_AVAILABLE = True
+except ImportError:
+    COMPANY_ENHANCEMENTS_AVAILABLE = False
+    print("⚠️ Company enhancements (conflict resolution, docs, analytics) not available")
+
 colorama.init(autoreset=True)
 
 
@@ -147,11 +187,14 @@ class FileManager:
             pattern: Glob pattern (default: all files)
 
         Returns:
-            List of relative file paths
+            List of relative file paths (automatically excludes system files like .DS_Store)
         """
+        from utils import should_ignore_file
+
         files = []
         for file_path in self.project_path.glob(pattern):
-            if file_path.is_file() and not file_path.name.endswith('.backup'):
+            # Skip system files using centralized filter
+            if file_path.is_file() and not should_ignore_file(file_path):
                 rel_path = file_path.relative_to(self.project_path)
                 files.append(str(rel_path))
         return sorted(files)
@@ -388,11 +431,15 @@ def create_project_workflow(
     stop_on_complete: bool = True,
     min_iterations: int = 2,
     enable_testing: bool = True,
-    test_command: Optional[str] = None
+    test_command: Optional[str] = None,
+    enable_collaborative_review: bool = True,
+    enable_security_scan: bool = True,
+    use_tdd: bool = False,
+    enable_pm_coordination: bool = True
 ) -> Dict:
     """
     Complete workflow: agents create a project with actual files
-    Includes automated testing and test-driven development (TDD) workflow
+    Includes automated testing, collaborative review, security scanning, PM coordination, and optional TDD
 
     Args:
         project_name: Name of the project
@@ -404,6 +451,10 @@ def create_project_workflow(
         min_iterations: Minimum iterations before checking completion (default: 2)
         enable_testing: Run tests after each iteration and provide feedback (default: True)
         test_command: Custom test command (default: auto-detect)
+        enable_collaborative_review: Enable peer code review between agents (default: True)
+        enable_security_scan: Run security vulnerability scan (default: True)
+        enable_pm_coordination: Enable Project Manager coordination (default: True)
+        use_tdd: Use Test-Driven Development mode (tests first) (default: False)
 
     Returns:
         Dict with project path, test results, and operations
@@ -445,7 +496,43 @@ def create_project_workflow(
         )
         file_agents.append(agent)
 
-    print(colorama.Fore.YELLOW + f"👥 Team: {', '.join(a.name for a in file_agents)}\n" + colorama.Style.RESET_ALL)
+    print(colorama.Fore.YELLOW + f"👥 Team: {', '.join(f'{a.name} ({a.role})' for a in file_agents)}\n" + colorama.Style.RESET_ALL)
+
+    # Initialize collaborative review system if enabled
+    collaborative_review = None
+    team_review_orchestrator = None
+    if enable_collaborative_review and COLLABORATIVE_REVIEW_AVAILABLE:
+        collaborative_review = CollaborativeReview()
+        team_review_orchestrator = TeamReviewOrchestrator()
+        print(colorama.Fore.CYAN + "👥 Collaborative Review enabled: Agents will peer-review each other's code\n" + colorama.Style.RESET_ALL)
+
+    # Initialize TDD workflow if enabled
+    tdd_workflow = None
+    if use_tdd and TDD_AVAILABLE:
+        tdd_workflow = TDDWorkflow(file_manager, test_executor if test_executor else TestExecutor(project_path))
+        print(colorama.Fore.CYAN + "🔴 TDD Mode enabled: Tests will be written first (RED→GREEN→REFACTOR)\n" + colorama.Style.RESET_ALL)
+
+    # Initialize security scanner if enabled
+    security_scanner = None
+    if enable_security_scan and SECURITY_SCAN_AVAILABLE:
+        security_scanner = SecurityScanner(project_path)
+        print(colorama.Fore.CYAN + "🔒 Security Scan enabled: Will scan for vulnerabilities\n" + colorama.Style.RESET_ALL)
+
+    # Initialize Project Manager coordination if enabled
+    pm_coordinator = None
+    if enable_pm_coordination and PROJECT_COORDINATION_AVAILABLE:
+        pm_coordinator = ProjectCoordinator(project_name, task)
+        print(colorama.Fore.CYAN + "👔 Project Manager enabled: Will coordinate team and track progress\n" + colorama.Style.RESET_ALL)
+
+    # Initialize Company Enhancements (Conflict Resolution, Docs, Analytics)
+    conflict_resolver = None
+    doc_generator = None
+    performance_analytics = None
+    if COMPANY_ENHANCEMENTS_AVAILABLE:
+        conflict_resolver = ConflictResolver()
+        doc_generator = DocumentationGenerator()
+        performance_analytics = PerformanceAnalytics()
+        print(colorama.Fore.CYAN + "🏢 Company Enhancements enabled: Conflict resolution, auto-docs, performance tracking\n" + colorama.Style.RESET_ALL)
 
     if stop_on_complete:
         print(colorama.Fore.CYAN + "🎯 Auto-stop enabled: Will stop when project is complete" + colorama.Style.RESET_ALL)
@@ -454,22 +541,75 @@ def create_project_workflow(
     all_operations = []
     completion_signals = []  # Track completion signals from agents
     test_results = None  # Initialize test results
+    review_results = []  # Track all review results
 
-    # Iteration loop: create, review, improve
-    for iteration in range(max_iterations):
-        print(colorama.Fore.CYAN + f"\n{'='*80}")
-        print(f"ITERATION {iteration + 1}/{max_iterations}")
+    # If TDD mode is enabled, run TDD workflow instead of regular iterations
+    if use_tdd and tdd_workflow:
+        print(colorama.Fore.MAGENTA + f"\n{'='*80}")
+        print(f"🔴 STARTING TDD WORKFLOW (Test-Driven Development)")
         print(f"{'='*80}\n" + colorama.Style.RESET_ALL)
 
-        iteration_completion_count = 0  # Count agents saying "done" this iteration
+        # Find QA and developer agents
+        qa_agents = [a for a in file_agents if "qa" in a.role.lower() or "tester" in a.role.lower()]
+        developer_agents = [a for a in file_agents if "developer" in a.role.lower()]
 
-        for agent in file_agents:
-            print(colorama.Fore.YELLOW + f"\n>>> {agent.name} ({agent.role}) working...\n" + colorama.Style.RESET_ALL)
+        if not qa_agents:
+            print(colorama.Fore.RED + "⚠️ TDD mode requires a QA/Tester agent! Falling back to regular workflow." + colorama.Style.RESET_ALL)
+        elif not developer_agents:
+            print(colorama.Fore.RED + "⚠️ TDD mode requires developer agents! Falling back to regular workflow." + colorama.Style.RESET_ALL)
+        else:
+            # Run TDD cycle
+            tdd_result = tdd_workflow.execute_tdd_cycle(
+                task=task,
+                qa_agent=qa_agents[0],  # Use first QA agent
+                developer_agents=developer_agents,
+                context=f"Project: {project_name}",
+                max_cycles=max_iterations
+            )
 
-            # Build context for agent
-            if iteration == 0:
-                # First iteration: create initial files
-                context = f"""Create the initial implementation for this project:
+            # Get final test results
+            test_results = tdd_result.get("final_test_results")
+
+            # Add TDD operations to all_operations
+            all_operations.append({
+                "iteration": "TDD",
+                "type": "tdd_workflow",
+                "result": tdd_result
+            })
+
+            # Skip regular iteration loop
+            print(colorama.Fore.GREEN + f"\n✅ TDD workflow complete!" + colorama.Style.RESET_ALL)
+
+    # Regular iteration loop: create, review, improve (skipped if TDD mode used)
+    if not (use_tdd and tdd_workflow and qa_agents and developer_agents):
+        for iteration in range(max_iterations):
+            print(colorama.Fore.CYAN + f"\n{'='*80}")
+            print(f"ITERATION {iteration + 1}/{max_iterations}")
+            print(f"{'='*80}\n" + colorama.Style.RESET_ALL)
+
+            # PM plans iteration (if enabled)
+            iteration_plan = None
+            if pm_coordinator:
+                current_files = file_manager.list_files()
+                previous_results = {
+                    'final_test_results': test_results
+                } if iteration > 0 else None
+
+                iteration_plan = pm_coordinator.plan_iteration(
+                    team=file_agents,
+                    current_files=current_files,
+                    previous_results=previous_results
+                )
+
+            iteration_completion_count = 0  # Count agents saying "done" this iteration
+
+            for agent in file_agents:
+                print(colorama.Fore.YELLOW + f"\n>>> {agent.name} ({agent.role}) working...\n" + colorama.Style.RESET_ALL)
+
+                # Build context for agent
+                if iteration == 0:
+                    # First iteration: create initial files
+                    context = f"""Create the initial implementation for this project:
 
 {task}
 
@@ -479,15 +619,15 @@ Project Structure so far:
 Your task: Create the files needed for your part of the project.
 Use the ```filename: path/to/file.ext format to create files.
 """
-            else:
-                # Later iterations: review and improve
-                existing_files = file_manager.list_files()
-                files_content = ""
-                for file_path in existing_files:
-                    content = file_manager.read_file(file_path)
-                    files_content += f"\n--- {file_path} ---\n{content}\n"
+                else:
+                    # Later iterations: review and improve
+                    existing_files = file_manager.list_files()
+                    files_content = ""
+                    for file_path in existing_files:
+                        content = file_manager.read_file(file_path)
+                        files_content += f"\n--- {file_path} ---\n{content}\n"
 
-                context = f"""Review and improve the project:
+                    context = f"""Review and improve the project:
 
 {task}
 
@@ -510,67 +650,140 @@ Only do this if:
 - Your part of the project is finished
 """
 
-            # Get agent response
-            response = agent.step(HumanMessage(content=context))
+                # Get agent response
+                response = agent.step(HumanMessage(content=context))
 
-            # Execute file operations
-            print(colorama.Fore.GREEN + f"\n{agent.name} creating/updating files:" + colorama.Style.RESET_ALL)
-            operations = agent.process_and_execute_file_operations(response.content)
-            all_operations.append({
-                "iteration": iteration + 1,
-                "agent": agent.name,
-                "operations": operations
-            })
-
-            # Print summary
-            if operations["created"]:
-                print(colorama.Fore.GREEN + f"  Created {len(operations['created'])} files" + colorama.Style.RESET_ALL)
-            if operations["updated"]:
-                print(colorama.Fore.YELLOW + f"  Updated {len(operations['updated'])} files" + colorama.Style.RESET_ALL)
-            if operations["errors"]:
-                print(colorama.Fore.RED + f"  Errors: {len(operations['errors'])}" + colorama.Style.RESET_ALL)
-
-            # Check if agent signals completion
-            if stop_on_complete and agent._is_completion_signal(response.content):
-                iteration_completion_count += 1
-                completion_signals.append({
+                # Execute file operations
+                print(colorama.Fore.GREEN + f"\n{agent.name} creating/updating files:" + colorama.Style.RESET_ALL)
+                operations = agent.process_and_execute_file_operations(response.content)
+                all_operations.append({
+                    "iteration": iteration + 1,
                     "agent": agent.name,
-                    "iteration": iteration + 1
+                    "operations": operations
                 })
-                print(colorama.Fore.CYAN + f"  ✓ {agent.name} signals: Project looks complete" + colorama.Style.RESET_ALL)
 
-        # After all agents in this iteration, run tests if enabled
-        if test_executor and iteration > 0:  # Skip testing on first iteration (no code yet)
-            print(colorama.Fore.CYAN + f"\n{'='*80}")
-            print(f"RUNNING TESTS FOR ITERATION {iteration + 1}")
-            print(f"{'='*80}\n" + colorama.Style.RESET_ALL)
+                # Print summary
+                if operations["created"]:
+                    print(colorama.Fore.GREEN + f"  Created {len(operations['created'])} files" + colorama.Style.RESET_ALL)
+                if operations["updated"]:
+                    print(colorama.Fore.YELLOW + f"  Updated {len(operations['updated'])} files" + colorama.Style.RESET_ALL)
+                if operations["errors"]:
+                    print(colorama.Fore.RED + f"  Errors: {len(operations['errors'])}" + colorama.Style.RESET_ALL)
 
-            test_results = test_executor.run_tests(test_command)
+                # Track performance analytics
+                if performance_analytics:
+                    for _ in operations["created"]:
+                        performance_analytics.record_agent_contribution(
+                            agent_name=agent.name,
+                            contribution_type="file_created",
+                            details={"iteration": iteration + 1}
+                        )
+                    for _ in operations["updated"]:
+                        performance_analytics.record_agent_contribution(
+                            agent_name=agent.name,
+                            contribution_type="file_updated",
+                            details={"iteration": iteration + 1}
+                        )
 
-            # If tests failed, provide feedback to developers for next iteration
-            if not test_results["success"] and iteration < max_iterations - 1:
-                print(colorama.Fore.YELLOW + f"\n⚠️ Tests failed! Providing feedback to developers for fixes...\n" + colorama.Style.RESET_ALL)
+                # Collaborative Review: If enabled and files were created/updated, have peers review
+                if collaborative_review and team_review_orchestrator and iteration > 0:
+                    files_to_review = operations["created"] + operations["updated"]
+                    if files_to_review:
+                        print(colorama.Fore.MAGENTA + f"\n👥 Initiating peer review for {agent.name}'s code..." + colorama.Style.RESET_ALL)
 
-                # Generate feedback for developers
-                test_feedback = test_executor.format_feedback_for_developer(test_results)
+                        # Determine which agents should review this work
+                        reviewer_agents = team_review_orchestrator.determine_reviewers(
+                            author_role=agent.role,
+                            file_path=files_to_review[0] if files_to_review else "",
+                            all_agents=file_agents
+                        )
 
-                # Find developer agents to give them test feedback
-                developer_agents = [a for a in file_agents if "developer" in a.role.lower()]
+                        # Filter out the author from reviewers
+                        reviewer_agents = [r for r in reviewer_agents if r.name != agent.name]
 
-                if developer_agents:
-                    print(colorama.Fore.YELLOW + f"🔧 Running fix iteration with {len(developer_agents)} developer(s)...\n" + colorama.Style.RESET_ALL)
+                        if reviewer_agents:
+                            # Review each created/updated file
+                            for file_path in files_to_review[:3]:  # Limit to 3 files per agent to avoid overwhelming reviews
+                                code_content = file_manager.read_file(file_path)
+                                if code_content:
+                                    review_result = collaborative_review.conduct_review(
+                                        file_path=file_path,
+                                        code_content=code_content,
+                                        author_agent=agent,
+                                        reviewer_agents=reviewer_agents,
+                                        context=task,
+                                        file_manager=file_manager,
+                                        max_rounds=2  # Limit review rounds to keep workflow moving
+                                    )
 
-                    for dev_agent in developer_agents:
-                        print(colorama.Fore.YELLOW + f"\n>>> {dev_agent.name} fixing test failures...\n" + colorama.Style.RESET_ALL)
+                                    review_results.append({
+                                        "iteration": iteration + 1,
+                                        "file": file_path,
+                                        "author": agent.name,
+                                        "result": review_result
+                                    })
 
-                        # Build context with test failures
-                        existing_files = file_manager.list_files()
-                        files_content = ""
-                        for file_path in existing_files:
-                            content = file_manager.read_file(file_path)
-                            files_content += f"\n--- {file_path} ---\n{content}\n"
+                                    # Track review contributions
+                                    if performance_analytics:
+                                        # Author received review
+                                        performance_analytics.record_agent_contribution(
+                                            agent_name=agent.name,
+                                            contribution_type="review_received",
+                                            details={"file": file_path, "iteration": iteration + 1}
+                                        )
+                                        # Reviewers gave review
+                                        for reviewer in reviewer_agents:
+                                            performance_analytics.record_agent_contribution(
+                                                agent_name=reviewer.name,
+                                                contribution_type="review_given",
+                                                details={"file": file_path, "iteration": iteration + 1}
+                                            )
 
-                        fix_context = f"""{test_feedback}
+                                    # If review led to improvements, update operations tracking
+                                    if review_result.get("rounds_completed", 0) > 1:
+                                        print(colorama.Fore.GREEN + f"  ✓ Code improved through {review_result['rounds_completed']} review rounds" + colorama.Style.RESET_ALL)
+
+                # Check if agent signals completion
+                if stop_on_complete and agent._is_completion_signal(response.content):
+                    iteration_completion_count += 1
+                    completion_signals.append({
+                        "agent": agent.name,
+                        "iteration": iteration + 1
+                    })
+                    print(colorama.Fore.CYAN + f"  ✓ {agent.name} signals: Project looks complete" + colorama.Style.RESET_ALL)
+
+            # After all agents in this iteration, run tests if enabled
+            if test_executor and iteration > 0:  # Skip testing on first iteration (no code yet)
+                print(colorama.Fore.CYAN + f"\n{'='*80}")
+                print(f"RUNNING TESTS FOR ITERATION {iteration + 1}")
+                print(f"{'='*80}\n" + colorama.Style.RESET_ALL)
+
+                test_results = test_executor.run_tests(test_command)
+
+                # If tests failed, provide feedback to developers for next iteration
+                if not test_results.get("success", False) and iteration < max_iterations - 1:
+                    print(colorama.Fore.YELLOW + f"\n⚠️ Tests failed! Providing feedback to developers for fixes...\n" + colorama.Style.RESET_ALL)
+
+                    # Generate feedback for developers
+                    test_feedback = test_executor.format_feedback_for_developer(test_results)
+
+                    # Find developer agents to give them test feedback
+                    developer_agents = [a for a in file_agents if "developer" in a.role.lower()]
+
+                    if developer_agents:
+                        print(colorama.Fore.YELLOW + f"🔧 Running fix iteration with {len(developer_agents)} developer(s)...\n" + colorama.Style.RESET_ALL)
+
+                        for dev_agent in developer_agents:
+                            print(colorama.Fore.YELLOW + f"\n>>> {dev_agent.name} fixing test failures...\n" + colorama.Style.RESET_ALL)
+
+                            # Build context with test failures
+                            existing_files = file_manager.list_files()
+                            files_content = ""
+                            for file_path in existing_files:
+                                content = file_manager.read_file(file_path)
+                                files_content += f"\n--- {file_path} ---\n{content}\n"
+
+                            fix_context = f"""{test_feedback}
 
 Current Project Files:
 {files_content}
@@ -583,43 +796,89 @@ Your task: Fix the bugs causing test failures.
 
 CRITICAL: Focus ONLY on fixing the failing tests. Do not add new features."""
 
-                        # Get developer's fix
-                        fix_response = dev_agent.step(HumanMessage(content=fix_context))
+                            # Get developer's fix
+                            fix_response = dev_agent.step(HumanMessage(content=fix_context))
 
-                        # Execute file operations
-                        print(colorama.Fore.GREEN + f"\n{dev_agent.name} applying fixes:" + colorama.Style.RESET_ALL)
-                        fix_operations = dev_agent.process_and_execute_file_operations(fix_response.content)
-                        all_operations.append({
-                            "iteration": iteration + 1,
-                            "agent": dev_agent.name,
-                            "type": "test_fix",
-                            "operations": fix_operations
-                        })
+                            # Execute file operations
+                            print(colorama.Fore.GREEN + f"\n{dev_agent.name} applying fixes:" + colorama.Style.RESET_ALL)
+                            fix_operations = dev_agent.process_and_execute_file_operations(fix_response.content)
+                            all_operations.append({
+                                "iteration": iteration + 1,
+                                "agent": dev_agent.name,
+                                "type": "test_fix",
+                                "operations": fix_operations
+                            })
 
-                        if fix_operations["updated"]:
-                            print(colorama.Fore.GREEN + f"  Fixed {len(fix_operations['updated'])} files" + colorama.Style.RESET_ALL)
+                            if fix_operations["updated"]:
+                                print(colorama.Fore.GREEN + f"  Fixed {len(fix_operations['updated'])} files" + colorama.Style.RESET_ALL)
 
-                    # Re-run tests after fixes
-                    print(colorama.Fore.CYAN + f"\n{'='*80}")
-                    print(f"RE-RUNNING TESTS AFTER FIXES")
-                    print(f"{'='*80}\n" + colorama.Style.RESET_ALL)
+                        # Re-run tests after fixes
+                        print(colorama.Fore.CYAN + f"\n{'='*80}")
+                        print(f"RE-RUNNING TESTS AFTER FIXES")
+                        print(f"{'='*80}\n" + colorama.Style.RESET_ALL)
 
-                    test_results = test_executor.run_tests(test_command)
+                        test_results = test_executor.run_tests(test_command)
 
-        # After all agents in this iteration, check if we should stop
-        if stop_on_complete and iteration >= min_iterations - 1:
-            # Calculate percentage of agents who signaled completion this iteration
-            completion_percentage = iteration_completion_count / len(file_agents)
+            # After all agents in this iteration, check if we should stop
+            if stop_on_complete and iteration >= min_iterations - 1:
+                # Calculate percentage of agents who signaled completion this iteration
+                completion_percentage = iteration_completion_count / len(file_agents)
 
-            print(colorama.Fore.CYAN + f"\n📊 Completion Status: {iteration_completion_count}/{len(file_agents)} agents signal complete ({completion_percentage*100:.0f}%)" + colorama.Style.RESET_ALL)
+                print(colorama.Fore.CYAN + f"\n📊 Completion Status: {iteration_completion_count}/{len(file_agents)} agents signal complete ({completion_percentage*100:.0f}%)" + colorama.Style.RESET_ALL)
 
-            # Stop if 70% or more agents agree project is complete
-            if completion_percentage >= 0.7:
-                print(colorama.Fore.GREEN + f"\n🎉 Majority of agents agree project is complete!" + colorama.Style.RESET_ALL)
-                print(colorama.Fore.GREEN + f"   Stopping after iteration {iteration + 1}/{max_iterations}" + colorama.Style.RESET_ALL)
-                break
-            elif completion_percentage > 0:
-                print(colorama.Fore.YELLOW + f"   Some agents think it's complete, but continuing for more refinement..." + colorama.Style.RESET_ALL)
+                # Stop if 70% or more agents agree project is complete
+                if completion_percentage >= 0.7:
+                    print(colorama.Fore.GREEN + f"\n🎉 Majority of agents agree project is complete!" + colorama.Style.RESET_ALL)
+                    print(colorama.Fore.GREEN + f"   Stopping after iteration {iteration + 1}/{max_iterations}" + colorama.Style.RESET_ALL)
+                    break
+                elif completion_percentage > 0:
+                    print(colorama.Fore.YELLOW + f"   Some agents think it's complete, but continuing for more refinement..." + colorama.Style.RESET_ALL)
+
+    # Run final security scan if enabled
+    security_scan_results = None
+    if security_scanner:
+        print(colorama.Fore.MAGENTA + f"\n{'='*80}")
+        print(f"🔒 RUNNING SECURITY SCAN")
+        print(f"{'='*80}\n" + colorama.Style.RESET_ALL)
+
+        security_scan_results = security_scanner.scan_project()
+
+        # Display security scan summary
+        vulnerability_count = len(security_scan_results.get("vulnerabilities", []))
+        if vulnerability_count == 0:
+            print(colorama.Fore.GREEN + "✅ No security vulnerabilities detected!" + colorama.Style.RESET_ALL)
+        else:
+            print(colorama.Fore.YELLOW + f"⚠️ Found {vulnerability_count} potential security issues:" + colorama.Style.RESET_ALL)
+
+            # Group by severity
+            by_severity = {}
+            for vuln in security_scan_results.get("vulnerabilities", []):
+                severity = vuln.get("severity", "UNKNOWN")
+                by_severity[severity] = by_severity.get(severity, 0) + 1
+
+            for severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+                if severity in by_severity:
+                    color = colorama.Fore.RED if severity in ["CRITICAL", "HIGH"] else colorama.Fore.YELLOW
+                    print(color + f"  {severity}: {by_severity[severity]}" + colorama.Style.RESET_ALL)
+
+            # Show critical issues
+            critical_issues = [v for v in security_scan_results.get("vulnerabilities", [])
+                             if v.get("severity") in ["CRITICAL", "HIGH"]]
+            if critical_issues:
+                print(colorama.Fore.RED + f"\n⚠️ CRITICAL ISSUES REQUIRE IMMEDIATE ATTENTION:" + colorama.Style.RESET_ALL)
+                for issue in critical_issues[:5]:  # Show first 5
+                    print(colorama.Fore.RED + f"  • {issue.get('type', 'unknown')} in {issue.get('file', 'unknown')}" + colorama.Style.RESET_ALL)
+                    print(f"    Line {issue.get('line', 'unknown')}: {issue.get('description', 'No description')}")
+
+    # PM conducts retrospective (if enabled)
+    retrospective_result = None
+    if pm_coordinator:
+        final_results_for_retro = {
+            'final_test_results': test_results,
+            'security_scan_results': security_scan_results,
+            'review_results': review_results
+        }
+        retrospective_result = pm_coordinator.conduct_retrospective(final_results_for_retro)
 
     # Final summary
     print(colorama.Fore.GREEN + f"\n\n{'='*80}")
@@ -632,6 +891,14 @@ CRITICAL: Focus ONLY on fixing the failing tests. Do not add new features."""
     final_files = file_manager.list_files()
     print(colorama.Fore.CYAN + f"\n📊 Total files created: {len(final_files)}" + colorama.Style.RESET_ALL)
 
+    # Show collaborative review summary if any reviews were conducted
+    if review_results:
+        total_reviews = len(review_results)
+        improved_count = sum(1 for r in review_results if r["result"].get("rounds_completed", 0) > 1)
+        print(colorama.Fore.CYAN + f"\n👥 Collaborative Reviews: {total_reviews} code reviews conducted" + colorama.Style.RESET_ALL)
+        if improved_count > 0:
+            print(colorama.Fore.GREEN + f"  ✓ {improved_count} files improved through peer feedback" + colorama.Style.RESET_ALL)
+
     # Show completion signals if any
     if completion_signals:
         print(colorama.Fore.CYAN + f"\n✓ Completion signals received from: {', '.join([s['agent'] for s in completion_signals])}" + colorama.Style.RESET_ALL)
@@ -641,6 +908,71 @@ CRITICAL: Focus ONLY on fixing the failing tests. Do not add new features."""
         print(colorama.Fore.CYAN + f"\n📊 Test Summary:" + colorama.Style.RESET_ALL)
         print(test_executor.get_test_history_summary())
 
+    # Show security scan summary if available
+    if security_scan_results:
+        vulnerability_count = len(security_scan_results.get("vulnerabilities", []))
+        if vulnerability_count == 0:
+            print(colorama.Fore.GREEN + f"\n🔒 Security: No vulnerabilities detected" + colorama.Style.RESET_ALL)
+        else:
+            print(colorama.Fore.YELLOW + f"\n🔒 Security: {vulnerability_count} potential issues found (review required)" + colorama.Style.RESET_ALL)
+
+    # Generate auto-documentation if enabled
+    readme_content = None
+    if doc_generator:
+        try:
+            # Get main files content for better documentation
+            main_files_content = {}
+            for file_path in final_files[:5]:  # Top 5 files
+                content = file_manager.read_file(file_path)
+                if content:
+                    main_files_content[file_path] = content
+
+            readme_content = doc_generator.generate_readme(
+                project_name=project_name,
+                project_files=final_files,
+                main_files_content=main_files_content
+            )
+
+            # Save README.md
+            readme_path = os.path.join(project_path, "README.md")
+            with open(readme_path, 'w') as f:
+                f.write(readme_content)
+
+            print(colorama.Fore.GREEN + f"\n📝 Auto-documentation: README.md generated" + colorama.Style.RESET_ALL)
+        except Exception as e:
+            print(colorama.Fore.YELLOW + f"\n⚠️ Could not generate documentation: {e}" + colorama.Style.RESET_ALL)
+
+    # Show performance analytics if enabled
+    performance_report = None
+    if performance_analytics:
+        try:
+            # Calculate quality scores for each agent
+            for agent in file_agents:
+                # Get review feedback for this agent
+                review_feedback = []
+                for review in review_results:
+                    if review.get("author") == agent.name:
+                        result = review.get("result", {})
+                        for round_data in result.get("rounds", []):
+                            for reviewer_feedback in round_data.get("reviews", []):
+                                review_feedback.append(reviewer_feedback.get("feedback", ""))
+
+                # Calculate test pass rate
+                test_pass_rate = 1.0 if test_results and test_results.get("success") else 0.7
+
+                # Calculate quality score
+                performance_analytics.calculate_code_quality_score(
+                    agent_name=agent.name,
+                    review_feedback=review_feedback,
+                    test_pass_rate=test_pass_rate
+                )
+
+            # Display performance report
+            performance_analytics.display_performance_report()
+            performance_report = performance_analytics.generate_performance_report()
+        except Exception as e:
+            print(colorama.Fore.YELLOW + f"\n⚠️ Could not generate performance analytics: {e}" + colorama.Style.RESET_ALL)
+
     return {
         "project_path": project_path,
         "files": final_files,
@@ -649,7 +981,11 @@ CRITICAL: Focus ONLY on fixing the failing tests. Do not add new features."""
         "completion_signals": completion_signals,
         "stopped_early": len(completion_signals) > 0 and stop_on_complete,
         "test_history": test_executor.test_history if test_executor else [],
-        "final_test_results": test_results if test_executor else None
+        "final_test_results": test_results if test_executor else None,
+        "review_results": review_results if review_results else [],
+        "security_scan_results": security_scan_results if security_scan_results else None,
+        "performance_report": performance_report if performance_report else None,
+        "readme_generated": readme_content is not None
     }
 
 

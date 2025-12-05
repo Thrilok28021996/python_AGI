@@ -47,10 +47,11 @@ class TestExecutor:
             Command to run tests, or None if no framework detected
         """
         # Check for Python test frameworks
+        from utils import should_ignore_file
         if (self.project_path / "pytest.ini").exists() or \
            (self.project_path / "setup.py").exists() or \
-           list(self.project_path.glob("test_*.py")) or \
-           list(self.project_path.glob("*_test.py")):
+           [f for f in self.project_path.glob("test_*.py") if not should_ignore_file(f)] or \
+           [f for f in self.project_path.glob("*_test.py") if not should_ignore_file(f)]:
             # Check if pytest is available
             try:
                 subprocess.run(["pytest", "--version"], capture_output=True, timeout=5)
@@ -70,7 +71,7 @@ class TestExecutor:
             return "jest"
 
         # Check for Go
-        if list(self.project_path.glob("*_test.go")):
+        if [f for f in self.project_path.glob("*_test.go") if not should_ignore_file(f)]:
             return "go test ./... -v"
 
         # Check for Rust
@@ -344,22 +345,23 @@ class TestExecutor:
 
     def _print_test_summary(self, results: Dict):
         """Print formatted test summary"""
-        if results["success"]:
+        if results.get("success", False):
             print(colorama.Fore.GREEN + "\n✅ ALL TESTS PASSED!" + colorama.Style.RESET_ALL)
-            print(colorama.Fore.GREEN + f"   {results['passed']}/{results['total_tests']} tests passed\n" + colorama.Style.RESET_ALL)
+            print(colorama.Fore.GREEN + f"   {results.get('passed', 0)}/{results.get('total_tests', 0)} tests passed\n" + colorama.Style.RESET_ALL)
         else:
             print(colorama.Fore.RED + "\n❌ TESTS FAILED!" + colorama.Style.RESET_ALL)
-            print(colorama.Fore.RED + f"   {results['failed']}/{results['total_tests']} tests failed" + colorama.Style.RESET_ALL)
-            print(colorama.Fore.GREEN + f"   {results['passed']}/{results['total_tests']} tests passed\n" + colorama.Style.RESET_ALL)
+            print(colorama.Fore.RED + f"   {results.get('failed', 0)}/{results.get('total_tests', 0)} tests failed" + colorama.Style.RESET_ALL)
+            print(colorama.Fore.GREEN + f"   {results.get('passed', 0)}/{results.get('total_tests', 0)} tests passed\n" + colorama.Style.RESET_ALL)
 
             # Print failure details
-            if results["failures"]:
+            failures = results.get("failures", [])
+            if failures:
                 print(colorama.Fore.YELLOW + "Failed tests:" + colorama.Style.RESET_ALL)
-                for i, failure in enumerate(results["failures"][:5], 1):  # Show first 5
-                    print(colorama.Fore.YELLOW + f"\n{i}. {failure['test']}" + colorama.Style.RESET_ALL)
-                    print(colorama.Fore.RED + f"   {failure['error'][:200]}" + colorama.Style.RESET_ALL)
-                if len(results["failures"]) > 5:
-                    print(colorama.Fore.YELLOW + f"\n   ... and {len(results['failures']) - 5} more failures" + colorama.Style.RESET_ALL)
+                for i, failure in enumerate(failures[:5], 1):  # Show first 5
+                    print(colorama.Fore.YELLOW + f"\n{i}. {failure.get('test', 'unknown')}" + colorama.Style.RESET_ALL)
+                    print(colorama.Fore.RED + f"   {failure.get('error', 'No error details')[:200]}" + colorama.Style.RESET_ALL)
+                if len(failures) > 5:
+                    print(colorama.Fore.YELLOW + f"\n   ... and {len(failures) - 5} more failures" + colorama.Style.RESET_ALL)
 
     def format_feedback_for_developer(self, test_results: Dict) -> str:
         """
@@ -371,12 +373,12 @@ class TestExecutor:
         Returns:
             Formatted feedback string for developer agents
         """
-        if test_results["success"]:
+        if test_results.get("success", False):
             return f"""
 🎉 TEST RESULTS: ALL TESTS PASSING
 
-✅ {test_results['passed']}/{test_results['total_tests']} tests passed
-Framework: {test_results['framework']}
+✅ {test_results.get('passed', 0)}/{test_results.get('total_tests', 0)} tests passed
+Framework: {test_results.get('framework', 'unknown')}
 
 Great job! The code is working correctly.
 No changes needed based on test results.
@@ -386,9 +388,9 @@ No changes needed based on test results.
         feedback = f"""
 ⚠️ TEST RESULTS: TESTS FAILING - CODE NEEDS FIXES
 
-❌ {test_results['failed']}/{test_results['total_tests']} tests failed
-✅ {test_results['passed']}/{test_results['total_tests']} tests passed
-Framework: {test_results['framework']}
+❌ {test_results.get('failed', 0)}/{test_results.get('total_tests', 0)} tests failed
+✅ {test_results.get('passed', 0)}/{test_results.get('total_tests', 0)} tests passed
+Framework: {test_results.get('framework', 'unknown')}
 
 CRITICAL: You MUST fix the failing tests before proceeding.
 
@@ -431,11 +433,12 @@ DO NOT PROCEED until tests pass. Focus on fixing these specific failures.
 """
 
         # Add stderr if it has useful information
-        if test_results.get("stderr") and len(test_results["stderr"]) > 10:
+        stderr = test_results.get("stderr", "")
+        if stderr and len(stderr) > 10:
             feedback += f"""
 
 Additional Error Output:
-{test_results['stderr'][:1000]}
+{stderr[:1000]}
 """
 
         return feedback
@@ -447,8 +450,8 @@ Additional Error Output:
 
         summary = "Test History:\n"
         for i, test_run in enumerate(self.test_history, 1):
-            status = "✅ PASSED" if test_run["success"] else "❌ FAILED"
-            summary += f"{i}. {status} - {test_run['passed']}/{test_run['total_tests']} passed\n"
+            status = "✅ PASSED" if test_run.get("success", False) else "❌ FAILED"
+            summary += f"{i}. {status} - {test_run.get('passed', 0)}/{test_run.get('total_tests', 0)} passed\n"
 
         return summary
 
